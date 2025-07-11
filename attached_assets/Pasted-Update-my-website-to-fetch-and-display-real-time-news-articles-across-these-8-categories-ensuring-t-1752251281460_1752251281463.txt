@@ -1,0 +1,27 @@
+Update my website to fetch and display real-time news articles across these 8 categories, ensuring that each category page shows only articles specific to that category.  
+All articles must properly load with their titles, descriptions, and images displayed clearly.  
+Ensure there is no duplication of articles within each category or across different categories — each article should appear only once per relevant category.  
+Each category page must also properly include the website footer and support the 12 available themes seamlessly, so the footer and themes work consistently across all 8 categories.
+
+- Latest news — fetch the most recent and trending news articles from all topics and sources, without filtering by category or country. This is a general feed of the newest headlines.
+
+- Kenyan news — fetch news articles that are specifically about Kenya, or reported by Kenyan news sources. Articles should cover Kenyan politics, economy, sports, culture, and society — but only if they are directly related to Kenya.
+
+- Sports — fetch only sports-related news, including football, athletics, basketball, tournaments, match results, player transfers, and other sports events worldwide.
+
+- Technology — fetch only technology-related news, including gadgets, software, artificial intelligence, startups, apps, tech company news, scientific innovations, and emerging technologies.
+
+- Business — fetch only business and finance news, including stock markets, corporate news, entrepreneurship, investments, economic trends, trade, and commerce.
+
+- Health — fetch only health-related news, such as updates on diseases, medical research, fitness, mental health, healthcare policies, hospitals, and wellness.
+
+- Entertainment — fetch only entertainment-related news, including movies, TV shows, celebrities, musicians, concerts, awards, cultural events, and lifestyle stories.
+
+- World news — fetch only international and global news not specific to Kenya. Focus on major world events, international relations, conflicts, diplomacy, global economy, and worldwide stories.
+
+Use these APIs in order, falling back to the next if one fails or quota is exhausted:
+1. NewsData.io — pub_d74b96fd4a9041d59212493d969368cd  
+2. GNews — 9db0da87512446db08b82d4f63a4ba8d  
+3. NewsAPI.org — 9fcf10b2fd0c48c7a1886330ebb04385  
+4. Mediastack — 4e53cf0fa35eefaac21cd9f77925b8f5  
+5. CurrentsAPI — 9tI-4kOmMlJdgcosDUBsYYZDAnkLnuuL4Hrgc5TKlHmN_AMH
