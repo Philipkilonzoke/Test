@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Category Test - Brightlens News</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-category {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .test-status {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .test-status.success { color: #28a745; }
+        .test-status.error { color: #dc3545; }
+        .test-status.loading { color: #007bff; }
+        .article-preview {
+            display: flex;
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #eee;
+            border-radius: 4px;
+        }
+        .article-image {
+            width: 100px;
+            height: 70px;
+            object-fit: cover;
+            margin-right: 10px;
+            border-radius: 4px;
+        }
+        .article-content {
+            flex: 1;
+        }
+        .article-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .article-description {
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Category Loading Test</h1>
+        
+        <div id="latest-test" class="test-category">
+            <h2>Latest News</h2>
+            <div class="test-status loading">Loading...</div>
+            <div class="articles-container"></div>
+        </div>
+        
+        <div id="kenya-test" class="test-category">
+            <h2>Kenya News</h2>
+            <div class="test-status loading">Loading...</div>
+            <div class="articles-container"></div>
+        </div>
+        
+        <div id="sports-test" class="test-category">
+            <h2>Sports News</h2>
+            <div class="test-status loading">Loading...</div>
+            <div class="articles-container"></div>
+        </div>
+        
+        <div id="technology-test" class="test-category">
+            <h2>Technology News</h2>
+            <div class="test-status loading">Loading...</div>
+            <div class="articles-container"></div>
+        </div>
+        
+        <div id="business-test" class="test-category">
+            <h2>Business News</h2>
+            <div class="test-status loading">Loading...</div>
+            <div class="articles-container"></div>
+        </div>
+        
+        <div id="health-test" class="test-category">
+            <h2>Health News</h2>
+            <div class="test-status loading">Loading...</div>
+            <div class="articles-container"></div>
+        </div>
+        
+        <div id="entertainment-test" class="test-category">
+            <h2>Entertainment News</h2>
+            <div class="test-status loading">Loading...</div>
+            <div class="articles-container"></div>
+        </div>
+        
+        <div id="world-test" class="test-category">
+            <h2>World News</h2>
+            <div class="test-status loading">Loading...</div>
+            <div class="articles-container"></div>
+        </div>
+    </div>
+
+    <script src="js/extended-articles.js"></script>
+    <script src="js/news-api.js"></script>
+    <script>
+        class CategoryTester {
+            constructor() {
+                this.newsAPI = new NewsAPI();
+                this.categories = ['latest', 'kenya', 'sports', 'technology', 'business', 'health', 'entertainment', 'world'];
+                this.results = {};
+                this.startTests();
+            }
+
+            async startTests() {
+                console.log('Starting category tests...');
+                
+                for (const category of this.categories) {
+                    await this.testCategory(category);
+                }
+            }
+
+            async testCategory(category) {
+                const testElement = document.getElementById(`${category}-test`);
+                const statusElement = testElement.querySelector('.test-status');
+                const articlesContainer = testElement.querySelector('.articles-container');
+
+                try {
+                    statusElement.textContent = 'Loading articles...';
+                    statusElement.className = 'test-status loading';
+
+                    const articles = await this.newsAPI.fetchNews(category, 5);
+                    
+                    if (articles && articles.length > 0) {
+                        statusElement.textContent = `✅ SUCCESS: Loaded ${articles.length} articles with images`;
+                        statusElement.className = 'test-status success';
+                        
+                        // Display first 3 articles as preview
+                        const previewArticles = articles.slice(0, 3);
+                        articlesContainer.innerHTML = previewArticles.map(article => `
+                            <div class="article-preview">
+                                <img src="${article.image}" alt="${article.title}" class="article-image" 
+                                     onerror="this.src='https://via.placeholder.com/100x70?text=No+Image'">
+                                <div class="article-content">
+                                    <div class="article-title">${article.title}</div>
+                                    <div class="article-description">${article.description || 'No description available'}</div>
+                                </div>
+                            </div>
+                        `).join('');
+                        
+                        this.results[category] = {
+                            success: true,
+                            count: articles.length,
+                            hasImages: articles.every(a => a.image),
+                            articles: articles
+                        };
+                    } else {
+                        statusElement.textContent = '❌ ERROR: No articles loaded';
+                        statusElement.className = 'test-status error';
+                        this.results[category] = { success: false, error: 'No articles returned' };
+                    }
+                } catch (error) {
+                    console.error(`Error testing ${category}:`, error);
+                    statusElement.textContent = `❌ ERROR: ${error.message}`;
+                    statusElement.className = 'test-status error';
+                    this.results[category] = { success: false, error: error.message };
+                }
+            }
+        }
+
+        // Start tests when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new CategoryTester();
+        });
+    </script>
+</body>
+</html>

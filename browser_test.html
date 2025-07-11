@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Article Loading Test - All Categories</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .category-test {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .category-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .category-title {
+            font-size: 18px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .status {
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status.loading {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        .status.success {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+        .status.error {
+            background: #ffebee;
+            color: #c62828;
+        }
+        .article-sample {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border-left: 4px solid #007bff;
+        }
+        .article-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .article-meta {
+            font-size: 12px;
+            color: #666;
+            display: flex;
+            gap: 15px;
+            margin-bottom: 5px;
+        }
+        .article-image {
+            width: 60px;
+            height: 40px;
+            object-fit: cover;
+            border-radius: 4px;
+            float: right;
+            margin-left: 10px;
+        }
+        .summary {
+            margin-top: 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .summary h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .stat-card {
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-header">
+        <h1>Brightlens News - Category Loading Test</h1>
+        <p>Testing all 8 categories for proper article loading with images</p>
+    </div>
+
+    <div id="test-container">
+        <!-- Category test divs will be inserted here -->
+    </div>
+
+    <div class="summary" id="summary" style="display: none;">
+        <h3>Test Summary</h3>
+        <div class="summary-stats">
+            <div class="stat-card">
+                <div class="stat-number" id="successful-categories">0</div>
+                <div class="stat-label">Successful Categories</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="total-articles">0</div>
+                <div class="stat-label">Total Articles</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="articles-with-images">0</div>
+                <div class="stat-label">Articles with Images</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="success-rate">0%</div>
+                <div class="stat-label">Success Rate</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/extended-articles.js"></script>
+    <script src="js/news-api.js"></script>
+    <script>
+        class CategoryTester {
+            constructor() {
+                this.newsAPI = new NewsAPI();
+                this.categories = ['latest', 'kenya', 'sports', 'technology', 'business', 'health', 'entertainment', 'world'];
+                this.results = {};
+                this.init();
+            }
+
+            init() {
+                this.createTestElements();
+                this.runTests();
+            }
+
+            createTestElements() {
+                const container = document.getElementById('test-container');
+                
+                this.categories.forEach(category => {
+                    const categoryDiv = document.createElement('div');
+                    categoryDiv.className = 'category-test';
+                    categoryDiv.innerHTML = `
+                        <div class="category-header">
+                            <div class="category-title">${category} News</div>
+                            <div class="status loading" id="status-${category}">Loading...</div>
+                        </div>
+                        <div id="content-${category}"></div>
+                    `;
+                    container.appendChild(categoryDiv);
+                });
+            }
+
+            async runTests() {
+                console.log('Starting comprehensive test of all 8 categories...');
+                
+                const testPromises = this.categories.map(category => this.testCategory(category));
+                
+                // Wait for all tests to complete
+                await Promise.allSettled(testPromises);
+                
+                // Show summary
+                this.showSummary();
+            }
+
+            async testCategory(category) {
+                const statusEl = document.getElementById(`status-${category}`);
+                const contentEl = document.getElementById(`content-${category}`);
+                
+                try {
+                    statusEl.textContent = 'Fetching articles...';
+                    statusEl.className = 'status loading';
+                    
+                    const articles = await this.newsAPI.fetchNews(category, 3);
+                    
+                    if (articles && articles.length > 0) {
+                        const articlesWithImages = articles.filter(article => 
+                            article.image && 
+                            article.image !== 'null' && 
+                            article.image !== null &&
+                            article.image.startsWith('http')
+                        );
+                        
+                        const imagePercentage = Math.round((articlesWithImages.length / articles.length) * 100);
+                        
+                        statusEl.textContent = `✓ ${articles.length} articles, ${articlesWithImages.length} with images (${imagePercentage}%)`;
+                        statusEl.className = 'status success';
+                        
+                        // Show sample article
+                        if (articles[0]) {
+                            contentEl.innerHTML = `
+                                <div class="article-sample">
+                                    ${articles[0].image ? `<img src="${articles[0].image}" alt="Article image" class="article-image" onerror="this.style.display='none'">` : ''}
+                                    <div class="article-title">${articles[0].title}</div>
+                                    <div class="article-meta">
+                                        <span>📰 ${articles[0].source || 'Unknown Source'}</span>
+                                        <span>🕒 ${new Date(articles[0].publishedAt || articles[0].date).toLocaleDateString()}</span>
+                                        <span>🖼️ ${articles[0].image ? 'Has Image' : 'No Image'}</span>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                        
+                        this.results[category] = {
+                            success: true,
+                            totalArticles: articles.length,
+                            articlesWithImages: articlesWithImages.length,
+                            imagePercentage: imagePercentage
+                        };
+                        
+                        console.log(`✅ ${category}: ${articles.length} articles loaded, ${articlesWithImages.length} with images (${imagePercentage}%)`);
+                        
+                    } else {
+                        statusEl.textContent = '✗ No articles loaded';
+                        statusEl.className = 'status error';
+                        contentEl.innerHTML = '<p>No articles were returned from the API</p>';
+                        
+                        this.results[category] = {
+                            success: false,
+                            error: 'No articles returned'
+                        };
+                        
+                        console.log(`❌ ${category}: No articles loaded`);
+                    }
+                    
+                } catch (error) {
+                    statusEl.textContent = `✗ Error: ${error.message}`;
+                    statusEl.className = 'status error';
+                    contentEl.innerHTML = `<p>Error: ${error.message}</p>`;
+                    
+                    this.results[category] = {
+                        success: false,
+                        error: error.message
+                    };
+                    
+                    console.error(`❌ ${category}: Error -`, error);
+                }
+            }
+
+            showSummary() {
+                const summaryEl = document.getElementById('summary');
+                summaryEl.style.display = 'block';
+                
+                let successfulCategories = 0;
+                let totalArticles = 0;
+                let articlesWithImages = 0;
+                
+                Object.values(this.results).forEach(result => {
+                    if (result.success) {
+                        successfulCategories++;
+                        totalArticles += result.totalArticles;
+                        articlesWithImages += result.articlesWithImages;
+                    }
+                });
+                
+                const successRate = Math.round((successfulCategories / this.categories.length) * 100);
+                
+                document.getElementById('successful-categories').textContent = `${successfulCategories}/${this.categories.length}`;
+                document.getElementById('total-articles').textContent = totalArticles;
+                document.getElementById('articles-with-images').textContent = articlesWithImages;
+                document.getElementById('success-rate').textContent = `${successRate}%`;
+                
+                console.log(`\n📊 FINAL SUMMARY:`);
+                console.log(`✅ Successful Categories: ${successfulCategories}/${this.categories.length} (${successRate}%)`);
+                console.log(`📰 Total Articles: ${totalArticles}`);
+                console.log(`🖼️ Articles with Images: ${articlesWithImages}`);
+                
+                if (successfulCategories === this.categories.length) {
+                    console.log('🎉 ALL CATEGORIES WORKING PERFECTLY!');
+                } else {
+                    console.log('⚠️ Some categories may need attention');
+                }
+            }
+        }
+
+        // Start the test when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new CategoryTester();
+        });
+    </script>
+</body>
+</html>
