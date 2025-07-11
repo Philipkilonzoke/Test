@@ -19,6 +19,78 @@ class NewsAPI {
             currentsapi: '9tI-4kOmMlJdgcosDUBsYYZDAnkLnuuL4Hrgc5TKlHmN_AMH'
         };
 
+        // Category-specific RSS feeds for real-time news
+        this.rssSources = {
+            latest: [
+                'https://feeds.bbci.co.uk/news/rss.xml',
+                'https://www.reuters.com/world/rss',
+                'https://feeds.npr.org/1001/rss.xml',
+                'https://apnews.com/rss'
+            ],
+            technology: [
+                'https://techcrunch.com/feed',
+                'https://www.theverge.com/rss/index.xml',
+                'https://www.wired.com/feed/rss',
+                'http://feeds.arstechnica.com/arstechnica/index',
+                'https://www.engadget.com/rss.xml',
+                'https://gizmodo.com/rss',
+                'https://venturebeat.com/feed/',
+                'https://www.zdnet.com/news/rss.xml'
+            ],
+            business: [
+                'https://feeds.bloomberg.com/markets/news.rss',
+                'https://www.cnbc.com/id/100003114/device/rss/rss.html',
+                'https://feeds.finance.yahoo.com/rss/2.0/headline',
+                'https://feeds.a.dj.com/rss/RSSMarketsMain.xml',
+                'https://www.reuters.com/business/rss',
+                'https://www.ft.com/rss/home'
+            ],
+            sports: [
+                'http://www.espn.com/espn/rss/news',
+                'https://www.skysports.com/rss/12040',
+                'https://sports.yahoo.com/rss/',
+                'https://fansided.com/feed/',
+                'https://www.foxsports.com/rss-feeds'
+            ],
+            entertainment: [
+                'https://www.tmz.com/rss.xml',
+                'https://ew.com/rss/all.xml',
+                'https://variety.com/feed/',
+                'https://www.rollingstone.com/rss',
+                'https://uproxx.com/feed',
+                'https://theshaderoom.com/feed'
+            ],
+            health: [
+                'https://www.webmd.com/rss/rss.aspx?RSSSource=RSS_PUBLIC',
+                'https://www.healthline.com/rss',
+                'https://www.mayoclinic.org/rss',
+                'https://tools.cdc.gov/api/v2/resources/media/316422.rss',
+                'https://www.health.harvard.edu/rss'
+            ],
+            world: [
+                'https://www.theguardian.com/world/rss',
+                'https://www.reuters.com/world/rss',
+                'https://feeds.bbci.co.uk/news/world/rss.xml',
+                'https://www.aljazeera.com/xml/rss/all.xml'
+            ],
+            kenya: [
+                'https://www.nation.co.ke/kenya/rss.xml',
+                'https://www.standardmedia.co.ke/rss',
+                'https://www.citizen.digital/rss',
+                'https://www.capitalfm.co.ke/news/feed/'
+            ]
+        };
+
+        // Free news APIs for additional coverage
+        this.additionalAPIs = {
+            // WorldNewsAPI - Free tier with 500 requests/day
+            worldnews: 'https://worldnewsapi.com/api/search-news',
+            // TheNewsAPI - Free tier with 100 requests/day
+            thenewsapi: 'https://api.thenewsapi.com/v1/news/top',
+            // NewsAPI.ai - Free trial
+            newsapiai: 'https://newsapi.ai/api/v1/article'
+        };
+
         // Enhanced Kenyan news sources for specific targeting
         this.kenyanSources = [
             'nation.co.ke',
@@ -39,7 +111,7 @@ class NewsAPI {
         ];
 
         this.cache = new Map();
-        this.cacheTimeout = 10 * 1000; // 10 seconds for maximum real-time freshness
+        this.cacheTimeout = 30 * 1000; // 30 seconds to reduce API calls and avoid rate limits
         this.requestController = new AbortController();
     }
 
@@ -90,14 +162,16 @@ class NewsAPI {
         }
 
         try {
-            // Fetch from all APIs simultaneously with timeout for faster response
+            // Fetch from all APIs and RSS feeds simultaneously with timeout for faster response
             // Order based on user preference: NewsData.io first, then GNews, etc.
             const promises = [
                 this.fetchFromNewsData(category, limit),
                 this.fetchFromGNews(category, limit),
                 this.fetchFromNewsAPI(category, limit),
                 this.fetchFromMediastack(category, limit),
-                this.fetchFromCurrentsAPI(category, limit)
+                this.fetchFromCurrentsAPI(category, limit),
+                this.fetchFromRSSFeeds(category, limit),
+                this.fetchFromAdditionalAPIs(category, limit)
             ];
 
             // Use Promise.allSettled with 8-second timeout for faster loading
@@ -146,13 +220,47 @@ class NewsAPI {
             console.error('Error fetching news:', error);
             // Clear cache for this category to avoid serving stale data
             this.cache.delete(cacheKey);
-            // Return sample articles as fallback with today's date
-            const fallbackArticles = this.getSampleArticles(category, 'Live News Feed');
+            
+            // Enhanced fallback system with Extended Articles Database
+            const extendedArticlesDB = new ExtendedArticlesDB();
+            let fallbackArticles = [];
+            
+            // Get extended articles based on category
+            switch(category) {
+                case 'latest':
+                    fallbackArticles = extendedArticlesDB.getExtendedLatestNews('Live News Feed');
+                    break;
+                case 'kenya':
+                    fallbackArticles = extendedArticlesDB.getExtendedKenyaNews('Kenya News Live');
+                    break;
+                case 'world':
+                    fallbackArticles = extendedArticlesDB.getExtendedWorldNews('World News Live');
+                    break;
+                case 'technology':
+                    fallbackArticles = extendedArticlesDB.getExtendedTechnologyNews('Tech News Live');
+                    break;
+                case 'entertainment':
+                    fallbackArticles = extendedArticlesDB.getExtendedEntertainmentNews('Entertainment Live');
+                    break;
+                case 'business':
+                    fallbackArticles = extendedArticlesDB.getExtendedBusinessNews('Business News Live');
+                    break;
+                case 'sports':
+                    fallbackArticles = extendedArticlesDB.getExtendedSportsNews('Sports News Live');
+                    break;
+                case 'health':
+                    fallbackArticles = extendedArticlesDB.getExtendedHealthNews('Health News Live');
+                    break;
+                default:
+                    fallbackArticles = this.getSampleArticles(category, 'Live News Feed');
+            }
+            
             // Update timestamps to today for better user experience
             const updatedFallback = fallbackArticles.map(article => ({
                 ...article,
                 publishedAt: new Date(Date.now() - Math.random() * 3600000).toISOString()
             }));
+            
             return this.removeDuplicates(updatedFallback);
         }
     }
@@ -162,8 +270,8 @@ class NewsAPI {
      */
     async fetchFromGNews(category, limit) {
         try {
-            // Enhanced GNews for maximum real-time coverage with sorting by newest first
-            let url = `https://gnews.io/api/v4/top-headlines?token=${this.apiKeys.gnews}&lang=en&max=${Math.min(limit, 10)}&sortby=publishedAt`;
+            // GNews with proper API key parameter and reduced limit for free tier
+            let url = `https://gnews.io/api/v4/top-headlines?apikey=${this.apiKeys.gnews}&lang=en&max=${Math.min(limit, 5)}&sortby=publishedAt`;
             
             if (category === 'kenya') {
                 // Kenya-specific news with proper filtering
@@ -222,8 +330,8 @@ class NewsAPI {
      */
     async fetchFromNewsData(category, limit) {
         try {
-            // Enhanced NewsData for maximum real-time coverage with time-based filtering
-            let url = `https://newsdata.io/api/1/latest?apikey=${this.apiKeys.newsdata}&language=en&size=${Math.min(limit, 10)}&timeframe=6&prioritydomain=top`;
+            // NewsData without timeframe parameter for free tier compatibility
+            let url = `https://newsdata.io/api/1/latest?apikey=${this.apiKeys.newsdata}&language=en&size=${Math.min(limit, 10)}`;
             
             if (category === 'kenya') {
                 // Kenya-specific news with proper filtering
@@ -451,6 +559,146 @@ class NewsAPI {
     }
 
     /**
+     * Fetch from RSS feeds - Category-specific real-time sources
+     */
+    async fetchFromRSSFeeds(category, limit) {
+        try {
+            const rssFeeds = this.rssSources[category] || this.rssSources.latest;
+            const articles = [];
+            
+            // Fetch from multiple RSS feeds simultaneously
+            const promises = rssFeeds.slice(0, 3).map(async (feedUrl) => {
+                try {
+                    // Use RSS2JSON service for CORS-free RSS parsing
+                    const response = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}&count=5`, {
+                        method: 'GET',
+                        signal: this.requestController.signal
+                    });
+                    
+                    if (!response.ok) throw new Error(`RSS fetch failed: ${response.status}`);
+                    
+                    const data = await response.json();
+                    return this.formatRSSArticles(data.items || [], feedUrl);
+                } catch (error) {
+                    console.error(`RSS feed error for ${feedUrl}:`, error);
+                    return [];
+                }
+            });
+            
+            const results = await Promise.all(promises);
+            const allArticles = results.flat();
+            
+            return allArticles.slice(0, limit);
+        } catch (error) {
+            console.error('RSS feeds fetch error:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Fetch from additional free APIs
+     */
+    async fetchFromAdditionalAPIs(category, limit) {
+        try {
+            const articles = [];
+            
+            // Free news aggregation from multiple sources
+            const promises = [
+                this.fetchFromGuardianAPI(category, limit),
+                this.fetchFromHackerNews(category, limit)
+            ];
+            
+            const results = await Promise.allSettled(promises);
+            const allArticles = results
+                .filter(result => result.status === 'fulfilled')
+                .map(result => result.value)
+                .flat();
+            
+            return allArticles.slice(0, limit);
+        } catch (error) {
+            console.error('Additional APIs fetch error:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Fetch from Guardian API - Free tier available
+     */
+    async fetchFromGuardianAPI(category, limit) {
+        try {
+            // Guardian API is free with test key
+            let url = `https://content.guardianapis.com/search?api-key=test&show-fields=thumbnail,headline,byline,body&page-size=${Math.min(limit, 10)}`;
+            
+            // Add category-specific sections
+            if (category === 'technology') {
+                url += '&section=technology';
+            } else if (category === 'business') {
+                url += '&section=business';
+            } else if (category === 'sports') {
+                url += '&section=sport';
+            } else if (category === 'world') {
+                url += '&section=world';
+            } else if (category === 'kenya') {
+                url += '&q=kenya';
+            }
+            
+            const response = await fetch(url, {
+                method: 'GET',
+                signal: this.requestController.signal
+            });
+            
+            if (!response.ok) throw new Error(`Guardian API error: ${response.status}`);
+            
+            const data = await response.json();
+            return this.formatGuardianArticles(data.response?.results || []);
+        } catch (error) {
+            console.error('Guardian API fetch error:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Fetch from Hacker News - Free for tech news
+     */
+    async fetchFromHackerNews(category, limit) {
+        try {
+            // Use Hacker News API for tech news
+            if (category === 'technology') {
+                const response = await fetch('https://hacker-news.firebaseio.com/v0/topstories.json');
+                const storyIds = await response.json();
+                
+                const articles = [];
+                for (let i = 0; i < Math.min(limit, 10); i++) {
+                    try {
+                        const storyResponse = await fetch(`https://hacker-news.firebaseio.com/v0/item/${storyIds[i]}.json`);
+                        const story = await storyResponse.json();
+                        
+                        if (story && story.title && story.url) {
+                            articles.push({
+                                title: story.title,
+                                description: story.title,
+                                url: story.url,
+                                urlToImage: this.getValidImage(null),
+                                publishedAt: new Date(story.time * 1000).toISOString(),
+                                source: { name: 'Hacker News' },
+                                author: story.by || 'Anonymous'
+                            });
+                        }
+                    } catch (error) {
+                        console.error('HN story fetch error:', error);
+                    }
+                }
+                return articles;
+            }
+            
+            return [];
+        } catch (error) {
+            console.error('Hacker News fetch error:', error);
+            return [];
+        }
+    }
+
+    /**
      * Category mapping functions for different APIs
      */
     mapCategoryForGNews(category) {
@@ -569,6 +817,48 @@ class NewsAPI {
             source: 'CurrentsAPI',
             category: article.category?.[0] || 'general'
         }));
+    }
+
+    formatRSSArticles(articles, feedUrl) {
+        const sourceName = this.getSourceNameFromRSSUrl(feedUrl);
+        return articles.map(article => ({
+            title: article.title,
+            description: this.cleanDescription(article.description || article.content),
+            url: article.link,
+            urlToImage: this.getValidImage(article.thumbnail || article.enclosure?.link),
+            publishedAt: article.pubDate,
+            source: sourceName,
+            category: 'general'
+        }));
+    }
+
+    formatGuardianArticles(articles) {
+        return articles.map(article => ({
+            title: article.webTitle,
+            description: this.cleanDescription(article.fields?.headline || article.webTitle),
+            url: article.webUrl,
+            urlToImage: this.getValidImage(article.fields?.thumbnail),
+            publishedAt: article.webPublicationDate,
+            source: 'The Guardian',
+            category: article.sectionName || 'general'
+        }));
+    }
+
+    getSourceNameFromRSSUrl(url) {
+        if (url.includes('techcrunch.com')) return 'TechCrunch';
+        if (url.includes('theverge.com')) return 'The Verge';
+        if (url.includes('wired.com')) return 'Wired';
+        if (url.includes('bbc.co.uk')) return 'BBC News';
+        if (url.includes('reuters.com')) return 'Reuters';
+        if (url.includes('bloomberg.com')) return 'Bloomberg';
+        if (url.includes('cnbc.com')) return 'CNBC';
+        if (url.includes('espn.com')) return 'ESPN';
+        if (url.includes('tmz.com')) return 'TMZ';
+        if (url.includes('webmd.com')) return 'WebMD';
+        if (url.includes('theguardian.com')) return 'The Guardian';
+        if (url.includes('nation.co.ke')) return 'Daily Nation';
+        if (url.includes('standardmedia.co.ke')) return 'The Standard';
+        return 'RSS Source';
     }
 
     /**

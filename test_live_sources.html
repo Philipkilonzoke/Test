@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Enhanced News Sources</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { color: green; }
+        .error { color: red; }
+        .article { margin: 10px 0; padding: 10px; background: #f9f9f9; border-radius: 3px; }
+        .loading { color: blue; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Enhanced News Sources Test</h1>
+    
+    <div class="test-section">
+        <h2>Category-Specific RSS Feeds</h2>
+        <button onclick="testRSSFeeds()">Test RSS Feeds</button>
+        <div id="rss-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Guardian API (Free)</h2>
+        <button onclick="testGuardian()">Test Guardian API</button>
+        <div id="guardian-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Hacker News API (Tech)</h2>
+        <button onclick="testHackerNews()">Test Hacker News</button>
+        <div id="hackernews-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Combined News API Test</h2>
+        <button onclick="testCombinedAPI()">Test All Sources</button>
+        <div id="combined-results"></div>
+    </div>
+
+    <script src="js/news-api.js"></script>
+    <script src="js/extended-articles.js"></script>
+    
+    <script>
+        async function testRSSFeeds() {
+            const resultsDiv = document.getElementById('rss-results');
+            resultsDiv.innerHTML = '<div class="loading">Testing RSS feeds...</div>';
+            
+            const newsAPI = new NewsAPI();
+            
+            try {
+                const articles = await newsAPI.fetchFromRSSFeeds('technology', 5);
+                resultsDiv.innerHTML = `
+                    <div class="success">✓ RSS feeds working: ${articles.length} articles</div>
+                    ${articles.map(article => `
+                        <div class="article">
+                            <strong>${article.title}</strong><br>
+                            Source: ${article.source}<br>
+                            <small>${article.publishedAt}</small>
+                        </div>
+                    `).join('')}
+                `;
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">✗ RSS feeds error: ${error.message}</div>`;
+            }
+        }
+        
+        async function testGuardian() {
+            const resultsDiv = document.getElementById('guardian-results');
+            resultsDiv.innerHTML = '<div class="loading">Testing Guardian API...</div>';
+            
+            const newsAPI = new NewsAPI();
+            
+            try {
+                const articles = await newsAPI.fetchFromGuardianAPI('technology', 5);
+                resultsDiv.innerHTML = `
+                    <div class="success">✓ Guardian API working: ${articles.length} articles</div>
+                    ${articles.map(article => `
+                        <div class="article">
+                            <strong>${article.title}</strong><br>
+                            Source: ${article.source}<br>
+                            <small>${article.publishedAt}</small>
+                        </div>
+                    `).join('')}
+                `;
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">✗ Guardian API error: ${error.message}</div>`;
+            }
+        }
+        
+        async function testHackerNews() {
+            const resultsDiv = document.getElementById('hackernews-results');
+            resultsDiv.innerHTML = '<div class="loading">Testing Hacker News API...</div>';
+            
+            const newsAPI = new NewsAPI();
+            
+            try {
+                const articles = await newsAPI.fetchFromHackerNews('technology', 5);
+                resultsDiv.innerHTML = `
+                    <div class="success">✓ Hacker News API working: ${articles.length} articles</div>
+                    ${articles.map(article => `
+                        <div class="article">
+                            <strong>${article.title}</strong><br>
+                            Source: ${article.source.name}<br>
+                            <small>${article.publishedAt}</small>
+                        </div>
+                    `).join('')}
+                `;
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">✗ Hacker News API error: ${error.message}</div>`;
+            }
+        }
+        
+        async function testCombinedAPI() {
+            const resultsDiv = document.getElementById('combined-results');
+            resultsDiv.innerHTML = '<div class="loading">Testing combined news sources...</div>';
+            
+            const newsAPI = new NewsAPI();
+            
+            try {
+                const articles = await newsAPI.fetchNews('technology', 20);
+                resultsDiv.innerHTML = `
+                    <div class="success">✓ Combined sources working: ${articles.length} articles</div>
+                    <p>Sources found: ${[...new Set(articles.map(a => a.source.name || a.source))].join(', ')}</p>
+                    ${articles.slice(0, 5).map(article => `
+                        <div class="article">
+                            <strong>${article.title}</strong><br>
+                            Source: ${article.source.name || article.source}<br>
+                            <small>${article.publishedAt}</small>
+                        </div>
+                    `).join('')}
+                `;
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">✗ Combined API error: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

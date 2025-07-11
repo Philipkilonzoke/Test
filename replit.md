@@ -10,10 +10,12 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (January 2025)
 
-### Real-Time News Enhancement
+### Real-Time News Enhancement with Additional Sources
 - **Enhanced API Configuration**: Updated news API integration with user-provided API keys in priority order
-- **Real-Time Filtering**: Reduced cache timeout to 10 seconds for maximum freshness
-- **Category-Specific Filtering**: Implemented precise category filtering for each of the 8 categories
+- **Additional News Sources**: Added RSS feeds and free APIs to complement existing paid APIs
+- **Category-Specific RSS Feeds**: Implemented 8 category-specific RSS feed collections for real-time news
+- **Free API Integration**: Added Guardian API, Hacker News API, and RSS2JSON service for broader coverage
+- **Rate Limit Handling**: Increased cache timeout to 30 seconds and enhanced fallback systems to prevent API overuse
 - **Sorting Optimization**: Ensured newest articles appear first in all categories
 - **Path Corrections**: Fixed all relative paths for proper GitHub Pages deployment
 
@@ -24,15 +26,30 @@ Preferred communication style: Simple, everyday language.
 4. **Mediastack** - Fourth API (4e53cf0fa35eefaac21cd9f77925b8f5)
 5. **CurrentsAPI** - Fifth API (9tI-4kOmMlJdgcosDUBsYYZDAnkLnuuL4Hrgc5TKlHmN_AMH)
 
+### Additional Real-Time News Sources
+- **RSS Feeds**: Category-specific RSS feeds from major news outlets
+- **Guardian API**: Free tier with category-specific sections
+- **Hacker News API**: Free tech news source
+- **RSS2JSON Service**: CORS-free RSS feed parsing
+
 ### Category-Specific Improvements
 - **Latest News**: Fetches most recent trending articles from all topics without category filtering
+  - RSS: BBC News, Reuters, NPR, AP News
 - **Kenya News**: Specifically targets Kenyan politics, economy, sports, culture, and society
+  - RSS: Daily Nation, The Standard, Citizen Digital, Capital FM
 - **Sports**: Covers football, athletics, basketball, tournaments, and global sports events
+  - RSS: ESPN, Sky Sports, Yahoo Sports, FanSided
 - **Technology**: Focuses on gadgets, AI, startups, tech companies, and innovations
+  - RSS: TechCrunch, The Verge, Wired, Ars Technica, Engadget, Gizmodo
+  - APIs: Hacker News API for tech discussions
 - **Business**: Includes stock markets, corporate news, investments, and economic trends
+  - RSS: Bloomberg, CNBC, Yahoo Finance, Wall Street Journal, Reuters Business
 - **Health**: Covers diseases, medical research, fitness, mental health, and healthcare policies
+  - RSS: WebMD, Healthline, Mayo Clinic, CDC, Harvard Health
 - **Entertainment**: Features movies, TV shows, celebrities, music, and cultural events
+  - RSS: TMZ, Entertainment Weekly, Variety, Rolling Stone, Uproxx
 - **World News**: International and global news excluding Kenya-specific content
+  - RSS: The Guardian, Reuters World, BBC World, Al Jazeera
 
 ## Recent Changes
 
