@@ -5,12 +5,17 @@
 
 class NewsAPI {
     constructor() {
-        // API Keys from environment or fallback defaults
+        // API Keys in priority order as specified by user
         this.apiKeys = {
-            gnews: '9db0da87512446db08b82d4f63a4ba8d',
+            // 1. NewsData.io - Primary API
             newsdata: 'pub_d74b96fd4a9041d59212493d969368cd',
+            // 2. GNews - Secondary API
+            gnews: '9db0da87512446db08b82d4f63a4ba8d',
+            // 3. NewsAPI.org - Tertiary API
             newsapi: '9fcf10b2fd0c48c7a1886330ebb04385',
+            // 4. Mediastack - Fourth API
             mediastack: '4e53cf0fa35eefaac21cd9f77925b8f5',
+            // 5. CurrentsAPI - Fifth API
             currentsapi: '9tI-4kOmMlJdgcosDUBsYYZDAnkLnuuL4Hrgc5TKlHmN_AMH'
         };
 
@@ -34,7 +39,7 @@ class NewsAPI {
         ];
 
         this.cache = new Map();
-        this.cacheTimeout = 30 * 1000; // 30 seconds for maximum freshness
+        this.cacheTimeout = 10 * 1000; // 10 seconds for maximum real-time freshness
         this.requestController = new AbortController();
     }
 
@@ -45,6 +50,22 @@ class NewsAPI {
         const now = new Date();
         // Get today's date for most recent news
         return now.toISOString().split('T')[0];
+    }
+
+    /**
+     * Get current hour for real-time filtering
+     */
+    getCurrentHour() {
+        return new Date().getHours();
+    }
+
+    /**
+     * Get last 6 hours timestamp for maximum real-time coverage
+     */
+    getLastSixHours() {
+        const now = new Date();
+        const sixHoursAgo = new Date(now.getTime() - 6 * 60 * 60 * 1000);
+        return sixHoursAgo.toISOString();
     }
 
     /**
@@ -70,9 +91,10 @@ class NewsAPI {
 
         try {
             // Fetch from all APIs simultaneously with timeout for faster response
+            // Order based on user preference: NewsData.io first, then GNews, etc.
             const promises = [
-                this.fetchFromGNews(category, limit),
                 this.fetchFromNewsData(category, limit),
+                this.fetchFromGNews(category, limit),
                 this.fetchFromNewsAPI(category, limit),
                 this.fetchFromMediastack(category, limit),
                 this.fetchFromCurrentsAPI(category, limit)
@@ -105,7 +127,7 @@ class NewsAPI {
             const sortedArticles = uniqueArticles.sort((a, b) => {
                 const dateA = new Date(a.publishedAt || 0);
                 const dateB = new Date(b.publishedAt || 0);
-                // Newest articles first (descending order)
+                // Newest articles first (descending order) - Real-time sorting
                 return dateB.getTime() - dateA.getTime();
             });
             
@@ -136,23 +158,39 @@ class NewsAPI {
     }
 
     /**
-     * Fetch from GNews API
+     * Fetch from GNews API - Secondary API
      */
     async fetchFromGNews(category, limit) {
         try {
             // Enhanced GNews for maximum real-time coverage with sorting by newest first
-            let url = `https://gnews.io/api/v4/top-headlines?token=${this.apiKeys.gnews}&lang=en&max=${Math.min(limit, 10)}&sortby=publishedAt&from=${this.getRecentTimeframe()}`;
+            let url = `https://gnews.io/api/v4/top-headlines?token=${this.apiKeys.gnews}&lang=en&max=${Math.min(limit, 10)}&sortby=publishedAt`;
             
             if (category === 'kenya') {
+                // Kenya-specific news with proper filtering
                 url += '&country=ke';
-                // Add search query for better Kenya coverage
-                url += '&q=(Kenya OR Nairobi OR Mombasa OR Kisumu OR "East Africa")';
+                url += '&q=(Kenya OR Nairobi OR Mombasa OR Kisumu OR "East Africa" OR Kenyan OR "Kenyan politics" OR "Kenyan economy")';
             } else if (category === 'latest') {
-                // Enhanced latest news query for broader coverage
-                url += '&q=(breaking OR news OR latest OR today OR update)';
+                // Latest news from all topics and sources without category filtering
+                url += '&q=(breaking OR latest OR news OR today OR update OR trending OR announcement)';
             } else if (category === 'world') {
-                url += '&q=(international OR global OR world OR foreign)';
-            } else if (category !== 'world') {
+                // World news excluding Kenya-specific content
+                url += '&q=(international OR global OR world OR foreign OR diplomatic OR "world news" OR worldwide)';
+            } else if (category === 'sports') {
+                // Sports-specific filtering
+                url += '&category=sports&q=(football OR athletics OR basketball OR tournament OR match OR player OR transfer OR "sports events")';
+            } else if (category === 'technology') {
+                // Technology-specific filtering
+                url += '&category=technology&q=(gadgets OR software OR "artificial intelligence" OR startup OR apps OR "tech company" OR innovation OR AI)';
+            } else if (category === 'business') {
+                // Business-specific filtering
+                url += '&category=business&q=("stock market" OR corporate OR entrepreneurship OR investment OR economic OR trade OR commerce)';
+            } else if (category === 'health') {
+                // Health-specific filtering
+                url += '&category=health&q=(disease OR medical OR research OR fitness OR "mental health" OR healthcare OR hospital OR wellness)';
+            } else if (category === 'entertainment') {
+                // Entertainment-specific filtering
+                url += '&category=entertainment&q=(movie OR "TV show" OR celebrity OR musician OR concert OR award OR cultural OR lifestyle)';
+            } else {
                 url += `&category=${this.mapCategoryForGNews(category)}`;
             }
 
@@ -180,23 +218,39 @@ class NewsAPI {
     }
 
     /**
-     * Fetch from NewsData.io API
+     * Fetch from NewsData.io API - Primary API
      */
     async fetchFromNewsData(category, limit) {
         try {
             // Enhanced NewsData for maximum real-time coverage with time-based filtering
-            let url = `https://newsdata.io/api/1/news?apikey=${this.apiKeys.newsdata}&language=en&size=${Math.min(limit, 10)}&timeframe=24&prioritydomain=top`;
+            let url = `https://newsdata.io/api/1/latest?apikey=${this.apiKeys.newsdata}&language=en&size=${Math.min(limit, 10)}&timeframe=6&prioritydomain=top`;
             
             if (category === 'kenya') {
-                url += '&country=ke&domain=' + this.kenyanSources.join(',');
-                // Enhanced Kenya news search
-                url += '&q=(Kenya OR Nairobi OR Mombasa OR Kisumu OR "East Africa" OR Kenyan)';
+                // Kenya-specific news with proper filtering
+                url += '&country=ke';
+                url += '&q=(Kenya OR Nairobi OR Mombasa OR Kisumu OR "East Africa" OR Kenyan OR "Kenyan politics" OR "Kenyan economy" OR "Kenyan sports" OR "Kenyan culture")';
             } else if (category === 'latest') {
-                // Latest news with priority domains for quality
-                url += '&q=(breaking OR latest OR news OR today OR update OR announcement)';
+                // Latest news from all topics and sources without category filtering
+                url += '&q=(breaking OR latest OR news OR today OR update OR trending OR announcement)';
             } else if (category === 'world') {
-                url += '&category=world&q=(international OR global OR foreign OR diplomatic)';
-            } else if (category !== 'world') {
+                // World news excluding Kenya
+                url += '&category=world&q=(international OR global OR foreign OR diplomatic OR "world news" OR worldwide)';
+            } else if (category === 'sports') {
+                // Sports-specific filtering
+                url += '&category=sports&q=(football OR athletics OR basketball OR tournament OR match OR player OR transfer OR "sports events")';
+            } else if (category === 'technology') {
+                // Technology-specific filtering
+                url += '&category=technology&q=(gadgets OR software OR "artificial intelligence" OR startup OR apps OR "tech company" OR innovation OR AI)';
+            } else if (category === 'business') {
+                // Business-specific filtering
+                url += '&category=business&q=("stock market" OR corporate OR entrepreneurship OR investment OR economic OR trade OR commerce OR finance)';
+            } else if (category === 'health') {
+                // Health-specific filtering
+                url += '&category=health&q=(disease OR medical OR research OR fitness OR "mental health" OR healthcare OR hospital OR wellness)';
+            } else if (category === 'entertainment') {
+                // Entertainment-specific filtering
+                url += '&category=entertainment&q=(movie OR "TV show" OR celebrity OR musician OR concert OR award OR cultural OR lifestyle)';
+            } else {
                 url += `&category=${this.mapCategoryForNewsData(category)}`;
             }
 
@@ -222,7 +276,7 @@ class NewsAPI {
     }
 
     /**
-     * Fetch from NewsAPI.org
+     * Fetch from NewsAPI.org - Tertiary API
      */
     async fetchFromNewsAPI(category, limit) {
         try {
@@ -231,13 +285,29 @@ class NewsAPI {
             const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
             
             if (category === 'kenya') {
-                // Enhanced Kenya coverage with everything endpoint for more articles
-                url = `https://newsapi.org/v2/everything?apiKey=${this.apiKeys.newsapi}&q=(Kenya OR Nairobi OR Mombasa OR Kisumu OR "East Africa")&from=${yesterday}&sortBy=publishedAt&pageSize=${Math.min(limit, 20)}`;
+                // Kenya-specific news with comprehensive filtering
+                url = `https://newsapi.org/v2/everything?apiKey=${this.apiKeys.newsapi}&q=(Kenya OR Nairobi OR Mombasa OR Kisumu OR "East Africa" OR Kenyan OR "Kenyan politics" OR "Kenyan economy" OR "Kenyan sports" OR "Kenyan culture")&from=${yesterday}&sortBy=publishedAt&pageSize=${Math.min(limit, 20)}`;
             } else if (category === 'latest') {
-                // Latest breaking news from multiple countries for broader coverage
-                url = `https://newsapi.org/v2/everything?apiKey=${this.apiKeys.newsapi}&q=(breaking OR latest OR news OR today OR update)&from=${yesterday}&sortBy=publishedAt&pageSize=${Math.min(limit, 20)}`;
+                // Latest news from all topics and sources without category filtering
+                url = `https://newsapi.org/v2/everything?apiKey=${this.apiKeys.newsapi}&q=(breaking OR latest OR news OR today OR update OR trending OR announcement)&from=${yesterday}&sortBy=publishedAt&pageSize=${Math.min(limit, 20)}`;
             } else if (category === 'world') {
-                url = `https://newsapi.org/v2/everything?apiKey=${this.apiKeys.newsapi}&q=(international OR global OR world OR foreign OR diplomatic)&from=${yesterday}&sortBy=publishedAt&pageSize=${Math.min(limit, 20)}`;
+                // World news excluding Kenya-specific content
+                url = `https://newsapi.org/v2/everything?apiKey=${this.apiKeys.newsapi}&q=(international OR global OR world OR foreign OR diplomatic OR "world news" OR worldwide)&from=${yesterday}&sortBy=publishedAt&pageSize=${Math.min(limit, 20)}`;
+            } else if (category === 'sports') {
+                // Sports-specific filtering with both endpoints for maximum coverage
+                url = `https://newsapi.org/v2/everything?apiKey=${this.apiKeys.newsapi}&q=(football OR athletics OR basketball OR tournament OR match OR player OR transfer OR "sports events" OR soccer OR tennis OR golf OR rugby)&from=${yesterday}&sortBy=publishedAt&pageSize=${Math.min(limit, 20)}`;
+            } else if (category === 'technology') {
+                // Technology-specific filtering
+                url = `https://newsapi.org/v2/everything?apiKey=${this.apiKeys.newsapi}&q=(gadgets OR software OR "artificial intelligence" OR startup OR apps OR "tech company" OR innovation OR AI OR programming OR cybersecurity)&from=${yesterday}&sortBy=publishedAt&pageSize=${Math.min(limit, 20)}`;
+            } else if (category === 'business') {
+                // Business-specific filtering
+                url = `https://newsapi.org/v2/everything?apiKey=${this.apiKeys.newsapi}&q=("stock market" OR corporate OR entrepreneurship OR investment OR economic OR trade OR commerce OR finance OR banking OR cryptocurrency)&from=${yesterday}&sortBy=publishedAt&pageSize=${Math.min(limit, 20)}`;
+            } else if (category === 'health') {
+                // Health-specific filtering
+                url = `https://newsapi.org/v2/everything?apiKey=${this.apiKeys.newsapi}&q=(disease OR medical OR research OR fitness OR "mental health" OR healthcare OR hospital OR wellness OR vaccine OR treatment)&from=${yesterday}&sortBy=publishedAt&pageSize=${Math.min(limit, 20)}`;
+            } else if (category === 'entertainment') {
+                // Entertainment-specific filtering
+                url = `https://newsapi.org/v2/everything?apiKey=${this.apiKeys.newsapi}&q=(movie OR "TV show" OR celebrity OR musician OR concert OR award OR cultural OR lifestyle OR Hollywood OR music OR streaming)&from=${yesterday}&sortBy=publishedAt&pageSize=${Math.min(limit, 20)}`;
             } else {
                 // Use top-headlines for specific categories for quality
                 url = `https://newsapi.org/v2/top-headlines?apiKey=${this.apiKeys.newsapi}&category=${this.mapCategoryForNewsAPI(category)}&pageSize=${Math.min(limit, 20)}`;
@@ -265,23 +335,39 @@ class NewsAPI {
     }
 
     /**
-     * Fetch from Mediastack API
+     * Fetch from Mediastack API - Fourth API
      */
     async fetchFromMediastack(category, limit) {
         try {
             // Enhanced Mediastack for maximum real-time coverage with time-based filtering  
-            let url = `http://api.mediastack.com/v1/news?access_key=${this.apiKeys.mediastack}&languages=en&limit=${Math.min(limit, 25)}&sort=published_desc&date=${this.getRecentTimeframe()}`;
+            let url = `https://api.mediastack.com/v1/news?access_key=${this.apiKeys.mediastack}&languages=en&limit=${Math.min(limit, 25)}&sort=published_desc&date=${this.getRecentTimeframe()}`;
             
             if (category === 'kenya') {
+                // Kenya-specific news with comprehensive filtering
                 url += '&countries=ke';
-                // Enhanced Kenya search
-                url += '&keywords=Kenya,Nairobi,Mombasa,Kisumu,East Africa';
+                url += '&keywords=Kenya,Nairobi,Mombasa,Kisumu,East Africa,Kenyan,Kenyan politics,Kenyan economy,Kenyan sports,Kenyan culture';
             } else if (category === 'latest') {
-                // Enhanced latest news with keywords for better targeting
-                url += '&keywords=breaking,latest,news,today,update,announcement';
+                // Latest news from all topics and sources without category filtering
+                url += '&keywords=breaking,latest,news,today,update,trending,announcement';
             } else if (category === 'world') {
-                url += '&keywords=international,global,world,foreign,diplomatic';
-            } else if (category !== 'world') {
+                // World news excluding Kenya-specific content
+                url += '&keywords=international,global,world,foreign,diplomatic,world news,worldwide';
+            } else if (category === 'sports') {
+                // Sports-specific filtering
+                url += '&categories=sports&keywords=football,athletics,basketball,tournament,match,player,transfer,sports events,soccer,tennis,golf,rugby';
+            } else if (category === 'technology') {
+                // Technology-specific filtering
+                url += '&categories=technology&keywords=gadgets,software,artificial intelligence,startup,apps,tech company,innovation,AI,programming,cybersecurity';
+            } else if (category === 'business') {
+                // Business-specific filtering
+                url += '&categories=business&keywords=stock market,corporate,entrepreneurship,investment,economic,trade,commerce,finance,banking,cryptocurrency';
+            } else if (category === 'health') {
+                // Health-specific filtering
+                url += '&categories=health&keywords=disease,medical,research,fitness,mental health,healthcare,hospital,wellness,vaccine,treatment';
+            } else if (category === 'entertainment') {
+                // Entertainment-specific filtering
+                url += '&categories=entertainment&keywords=movie,TV show,celebrity,musician,concert,award,cultural,lifestyle,Hollywood,music,streaming';
+            } else {
                 url += `&categories=${this.mapCategoryForMediastack(category)}`;
             }
 
@@ -307,7 +393,7 @@ class NewsAPI {
     }
 
     /**
-     * Fetch from CurrentsAPI
+     * Fetch from CurrentsAPI - Fifth API
      */
     async fetchFromCurrentsAPI(category, limit) {
         try {
@@ -315,15 +401,31 @@ class NewsAPI {
             let url = `https://api.currentsapi.services/v1/latest-news?apiKey=${this.apiKeys.currentsapi}&language=en&page_size=${Math.min(limit, 20)}`;
             
             if (category === 'kenya') {
+                // Kenya-specific news with comprehensive filtering
                 url += '&country=ke';
-                // Enhanced Kenya search with keywords
-                url += '&keywords=Kenya+OR+Nairobi+OR+Mombasa+OR+Kisumu+OR+"East Africa"';
+                url += '&keywords=Kenya+OR+Nairobi+OR+Mombasa+OR+Kisumu+OR+"East Africa"+OR+Kenyan+OR+"Kenyan politics"+OR+"Kenyan economy"+OR+"Kenyan sports"+OR+"Kenyan culture"';
             } else if (category === 'latest') {
-                // Enhanced latest news with targeted keywords
-                url += '&keywords=breaking+OR+latest+OR+news+OR+today+OR+update+OR+announcement';
+                // Latest news from all topics and sources without category filtering
+                url += '&keywords=breaking+OR+latest+OR+news+OR+today+OR+update+OR+trending+OR+announcement';
             } else if (category === 'world') {
-                url += '&keywords=international+OR+global+OR+world+OR+foreign+OR+diplomatic';
-            } else if (category !== 'world') {
+                // World news excluding Kenya-specific content
+                url += '&keywords=international+OR+global+OR+world+OR+foreign+OR+diplomatic+OR+"world news"+OR+worldwide';
+            } else if (category === 'sports') {
+                // Sports-specific filtering
+                url += '&category=sports&keywords=football+OR+athletics+OR+basketball+OR+tournament+OR+match+OR+player+OR+transfer+OR+"sports events"+OR+soccer+OR+tennis+OR+golf+OR+rugby';
+            } else if (category === 'technology') {
+                // Technology-specific filtering
+                url += '&category=technology&keywords=gadgets+OR+software+OR+"artificial intelligence"+OR+startup+OR+apps+OR+"tech company"+OR+innovation+OR+AI+OR+programming+OR+cybersecurity';
+            } else if (category === 'business') {
+                // Business-specific filtering
+                url += '&category=business&keywords="stock market"+OR+corporate+OR+entrepreneurship+OR+investment+OR+economic+OR+trade+OR+commerce+OR+finance+OR+banking+OR+cryptocurrency';
+            } else if (category === 'health') {
+                // Health-specific filtering
+                url += '&category=health&keywords=disease+OR+medical+OR+research+OR+fitness+OR+"mental health"+OR+healthcare+OR+hospital+OR+wellness+OR+vaccine+OR+treatment';
+            } else if (category === 'entertainment') {
+                // Entertainment-specific filtering
+                url += '&category=entertainment&keywords=movie+OR+"TV show"+OR+celebrity+OR+musician+OR+concert+OR+award+OR+cultural+OR+lifestyle+OR+Hollywood+OR+music+OR+streaming';
+            } else {
                 url += `&category=${this.mapCategoryForCurrentsAPI(category)}`;
             }
 

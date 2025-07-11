@@ -8,6 +8,32 @@ Brightlens News is a comprehensive multi-page web application that serves as a m
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes (January 2025)
+
+### Real-Time News Enhancement
+- **Enhanced API Configuration**: Updated news API integration with user-provided API keys in priority order
+- **Real-Time Filtering**: Reduced cache timeout to 10 seconds for maximum freshness
+- **Category-Specific Filtering**: Implemented precise category filtering for each of the 8 categories
+- **Sorting Optimization**: Ensured newest articles appear first in all categories
+- **Path Corrections**: Fixed all relative paths for proper GitHub Pages deployment
+
+### API Priority Order (as requested)
+1. **NewsData.io** - Primary API (pub_d74b96fd4a9041d59212493d969368cd)
+2. **GNews** - Secondary API (9db0da87512446db08b82d4f63a4ba8d)
+3. **NewsAPI.org** - Tertiary API (9fcf10b2fd0c48c7a1886330ebb04385)
+4. **Mediastack** - Fourth API (4e53cf0fa35eefaac21cd9f77925b8f5)
+5. **CurrentsAPI** - Fifth API (9tI-4kOmMlJdgcosDUBsYYZDAnkLnuuL4Hrgc5TKlHmN_AMH)
+
+### Category-Specific Improvements
+- **Latest News**: Fetches most recent trending articles from all topics without category filtering
+- **Kenya News**: Specifically targets Kenyan politics, economy, sports, culture, and society
+- **Sports**: Covers football, athletics, basketball, tournaments, and global sports events
+- **Technology**: Focuses on gadgets, AI, startups, tech companies, and innovations
+- **Business**: Includes stock markets, corporate news, investments, and economic trends
+- **Health**: Covers diseases, medical research, fitness, mental health, and healthcare policies
+- **Entertainment**: Features movies, TV shows, celebrities, music, and cultural events
+- **World News**: International and global news excluding Kenya-specific content
+
 ## Recent Changes
 
 **July 11, 2025**
